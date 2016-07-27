@@ -55,5 +55,5 @@ else
 fi
 
 # Run in foreground, start-webapp will exclude adding Elastich Search which is bundled with Bitbucket. This is due that
-# we will use Splunk in stead
+# we will use Splunk in stead. See https://confluence.atlassian.com/bitbucketserver/starting-and-stopping-bitbucket-server-776640144.html
 bin/start-webapp.sh -fg
