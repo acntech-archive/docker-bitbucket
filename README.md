@@ -1,112 +1,177 @@
-# docker-bitbucket: A Docker image for Bitbucket Server
+# Supported tags and respective `Dockerfile` links
 
-## Features
-* Installs *Altassian Bitbucket Server* v 4.8
-* Runs on *openjdk-8-jre*
-* Ready to be configured with *Nginx* as a reverse proxy (https available).
+-	[`latest` (*latest/Dockerfile*)](https://)
 
-## Note
-This Docker is based on the official [Attlasian Bitbucket Server image](https://bitbucket.org/atlassian/docker-atlassian-bitbucket-server) and is only extending it with support for Nginx.
-See also [Securing Bitbucket Server begind nginx using SSL](https://confluence.atlassian.com/bitbucketserver/securing-bitbucket-server-behind-nginx-using-ssl-776640112.html)
-## Quick Start
-For the `BITBUCKET_HOME` directory that is used to store the data we recommend mounting a host directory as a [data volume](https://docs.docker.com/engine/tutorials/dockervolumes/) :
-Set permissions for the data directory so that the runuser can write to it:
-```bash
-$> docker run -u root -v /data/bitbucket:/var/atlassian/application-data/bitbucket acntech/adop-bitbucket chown -R daemon /var/atlassian/application-data/bitbucket
-```
-Start Atlassian Bitbucket Server:
+[![](https://badge.imagelayers.io/httpd:latest.svg)](https://imagelayers.io/?images=httpd:2.2.31,httpd:2.2.31-alpine,httpd:2.4.23,httpd:2.4.23-alpine) **TODO**
 
-```bash
-$> docker run -v /data/bitbucket:/var/atlassian/application-data/bitbucket --name="bitbucket" -d -p 7990:7990 -p 7999:7999 acntech/adop-bitbucket
-```
-**Success**. Bitbucket is now available on [http://localhost:7990](http://localhost:7990)*
+# What is Bitbucket Server?
 
-Please ensure your container has the necessary resources allocated to it.
-We recommend 2GiB of memory allocated to accommodate both the application server
-and the git processes.
-See [Supported Platforms](https://confluence.atlassian.com/display/BitbucketServer/Supported+platforms) for further information.
+Bitbucket Server (previously named Stash) is an on-premises source code management solution for Git that's secure, fast, and enterprise grade. Create and manage repositories, set up fine-grained permissions, and collaborate on code â€“ all with the flexibility of your servers.
 
-_* Note: If you are using `docker-machine` on Mac OS X, please use `open http://$(docker-machine ip default):7990` instead._
+Learn more about Bitbucket Server: <https://www.atlassian.com/software/bitbucket>
 
-### Parameters
+> [wikipedia.org/wiki/Bitbucket](https://en.wikipedia.org/wiki/Bitbucket)
 
-You can use this parameters to configure your Bitbucket Server instance:
+<img src="logo.png" alt="Logo" width="450px"/>
 
-* **-s:** Enables the connector security and sets `https` as connector scheme.
-* **-n &lt;proxyName&gt;:** Sets the connector proxy name.
-* **-p &lt;proxyPort&gt;:** Sets the connector proxy port.
-* **-c &lt;contextPath&gt;:** Sets the context path (do not write the initial /). Note The context path does [not](https://confluence.atlassian.com/bitbucketserver/moving-bitbucket-server-to-a-different-context-path-776640153.html) affect the URL at which _SSH_ operations occur.
+# How to use this image.
 
-This parameters should be given to the entrypoint (passing them after the image):
+This image is based on official [java:openjdk-8-jre (JRE)](https://github.com/docker-library/docs/tree/master/java) and installs Atlassian Bitbucket Server 4.8.3. It is also enabled for use with reverse proxy by providing environment variables as explained further down in this README.
+Reason why this Docker image has been established is that we wanted to do few changes to the official [Atlassian Bitbucket Server image](https://bitbucket.org/atlassian/docker-atlassian-bitbucket-server) such as adding support for reverse proxy, running Bitbucket as `bitbucket` user and setting unmask to 0027.
 
-```bash
-$> docker run -d -p 7990:7990 acntech/adop-bitbucket <parameters>
+### Credits
+We want to give credit to following Docker images that has been used as inspiration of this image:
+- [atlassian/bitbucket-server](https://bitbucket.org/atlassian/docker-atlassian-bitbucket-server)
+- [cptactionhank/docker-atlassian-jira-software](https://github.com/cptactionhank/docker-atlassian-jira-software)
+- [ahaasler/docker-jira](https://github.com/ahaasler/docker-jira)
+- [mhubig/atlassian](https://github.com/mhubig/atlassian)
+
+### Alt 1: Run container with minimum config
+
+```console
+$ docker run -d -p 7990:7990 -p 7999:7999 --name bitbucket acntech/adop-bitbucket
 ```
 
-> If you want to execute another command instead of launching Bitbucket you should overwrite the entrypoint with `--entrypoint <command>` (docker run parameter).
+You are now ready to start configuration of Bitbucket (choosing license model and other initial configuration) by entering http://localhost:7990. We recommend that you look at logs (`docker logs bitbucket -f`) while initial configuration is done to make sure everything is running smooth.
 
-### Nginx as reverse proxy
+This will store the workspace in `/var/atlassian/application-data/bitbucket`. All Bitbucket Server data lives in there - including plugins, configuration, attachments ++ (see [Bitbucket Server home directory](https://confluence.atlassian.com/bitbucketserver/bitbucket-server-home-directory-776640890.html) ). You will probably want to make that a persistent volume (recommended)
 
-Lets say you have the following *nginx* configuration for bitbucket:
+### Alt 2: Run container with persisting volume
 
+```console
+$ docker run -d -p 7990:7990 -p 7999:7999 --name bitbucket \
+      -v "/your/home/data/bitbucket:/var/atlassian/application-data/bitbucket" \
+      acntech/adop-bitbucket
+```
+This will store the Bitbucket Server data in `/your/home` on the host. 
+Ensure that `/your/home` is accessible by the `bitbucket` user in container (`bitbucket` user - uid `1000`) or use [-u](https://docs.docker.com/engine/reference/run/#/user) `some_other_user` parameter with `docker run`.
+
+### Alt 3: Run container with reverse proxy
+
+If you have a reverse proxy, such as [Nginx](https://confluence.atlassian.com/bitbucketserver/securing-bitbucket-server-behind-nginx-using-ssl-776640112.html) or [Apache HTTP Server](https://confluence.atlassian.com/kb/integrating-apache-http-server-reverse-proxy-with-bitbucket-server-753894395.html) in front of your Bitbucket Server you need to provide proxy settings:
+
+```console
+$ docker run -d -p 7990:7990 -p 7999:7999 --name bitbucket \
+    -v "/your/home/data/bitbucket:/var/atlassian/application-data/bitbucket" \
+    -e "X_PROXY_NAME=example.com" \
+    -e "X_PROXY_PORT=80" \
+    -e "X_PROXY_SCHEME=http" \
+    -e "X_PATH=/bitbucket" \
+    acntech/adop-bitbucket
+```
+
+Environment Variables:
+`X_PROXY_NAME`      : Sets the connector proxy name (in this case `example.com`)
+`X_PROXY_PORT`      : Sets the connector proxy port (in this case `80`)
+`X_PROXY_SCHEME`    : Sets the connector scheme (in this case `http`).
+`X_PATH`            : Sets the context path (in this case `/bitbucket` so you would access Bitbucket http://localhost:8080/bitbucket).
+
+_IMPORTANT_! This configuration will be only written to `${BITBUCKET_HOME}/shared/server.xml` file once, when one or more of env variables are provided. Next time you stop/start container these parameters will be ignored.
+
+You will also need to configure reverse proxy, _example_ of such configuration for _Nginx_ (which is running at same [Docker host and network](https://docs.docker.com/engine/userguide/networking/dockernetworks/) as Bitbucket) is:
 ```
 server {
-    listen                          80;
-    server_name                     example.com;
-    return                          301 https://$host$request_uri;
-}
-server {
-    listen                          443;
-    server_name                     example.com;
-    
-    ssl                  	on;
-    ssl_certificate      	<path/to/your/certificate>;
-    ssl_certificate_key  	<path/to/your/certificate/key>;
-    ssl_session_timeout  	5m;
-    ssl_protocols  			TLSv1 TLSv1.1 TLSv1.2;
-    ssl_ciphers  			HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers   on;
-    # Optional optimisation - please refer to http://nginx.org/en/docs/http/configuring_https_servers.html
-    # ssl_session_cache   shared:SSL:10m;
+    listen                                  80;
+    server_name                             example.com;
     location /bitbucket {
-        proxy_pass 			http://localhost:7990;
-        proxy_set_header 	X-Forwarded-Host $host;
-        proxy_set_header 	X-Forwarded-Server $host;
-        proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header    X-Real-IP $remote_addr;
-        proxy_redirect 		off;
+        proxy_set_header X-Forwarded-Host   $host;
+        proxy_set_header X-Forwarded-Server $host;
+        proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+        proxy_pass                          http://bitbucket-software:7990;
+        proxy_redirect                      off;
     }
 }
 ```
+### Alt 4: Run container with custom memory and plugin timeout properties
 
-> This is only an example, please secure you *nginx* better.
-
-For that configuration you should run your Bitbucket Server container with:
-
-```bash
-$> docker run -d -p 7990:7990 acntech/adop-bitbucket -s -n example.com -p 443 -c bitbucket
+```console
+$ docker run -d -p 7990:7990 -p 7999:7999 --name bitbucket \
+      -v "/your/home/data/bitbucket:/var/atlassian/application-data/bitbucket" \
+      -e "X_PROXY_NAME=example.com" \
+      -e "X_PROXY_PORT=80" \
+      -e "X_PROXY_SCHEME=http" \
+      -e "X_PATH=/bitbucket" \
+      -e "CATALINA_OPTS=-Xms256m -Xmx768m -Datlassian.plugins.enable.wait=300" \
+      acntech/adop-bitbucket
 ```
 
+Catalina properties:
+`Xms` : JVM Minimum Memory (in this case 256 MB). [More information](https://confluence.atlassian.com/bitbucketserverkb/bitbucket-server-is-reaching-resource-limits-779171381.html#BitbucketServerisreachingresourcelimits-Memorybudget)
+`Xmx` : JVM Maximum Memory (in this case 768 MB). [More information](https://confluence.atlassian.com/bitbucketserverkb/bitbucket-server-is-reaching-resource-limits-779171381.html#BitbucketServerisreachingresourcelimits-Memorybudget)
+`atlassian.plugins.enable.wait` : Time in seconds Bitbucket waits for plugins to load eg. 300. [More information](https://confluence.atlassian.com/display/JIRAKB/JIRA+applications+System+Plugin+Timeout+While+Waiting+for+Add-ons+to+Enable)
 
-## Upgrade
+### Bitbucket Setup
+After container has started for the first time you can access Bitbucket Server UI at http://localhost:7990 and start initial setup. 
+If you would like to use Oracle as database, please take a look at [setup-bitbucket-oracledb.sql](sql/setup-bitbucket-oracledb.sql) and official [documentation](https://confluence.atlassian.com/bitbucketserver/connecting-bitbucket-server-to-oracle-776640379.html).
+
+### Upgrade
+    
 Refer to [Bitbucket Server upgrade guide](https://confluence.atlassian.com/bitbucketserver/bitbucket-server-upgrade-guide-776640551.html)
 
 To upgrade to a more recent version of Bitbucket Server you can simply stop the `bitbucket`
-container and start a new one based on a more recent image:
+container and start a new one based on a more recent Docker image:
 
     $> docker stop bitbucket
     $> docker rm bitbucket
     $> docker run ... (See above)
 
-As your data is stored in the data volume directory on the host it will still
-be available after the upgrade.
+As your data is stored in the data volume directory on the host it will still be available after the upgrade.
 
-_Note: Please make sure that you **don't** accidentally remove the `bitbucket`
+_IMPORTANT: Please make sure that you **don't** accidentally remove the `bitbucket`
 container and its volumes using the `-v` option._
 
-## Backup
-See official [Docker image for Bitbucket Server](https://bitbucket.org/atlassian/docker-atlassian-bitbucket-server)
 
-## License
+### Backup 
+For evaluations you can use the built-in database that will store its files in the Bitbucket Server home directory. In that case it is sufficient to create a backup archive of the directory on the host that is used as a volume (`/your/home/data/bitbucket` in the example above).
+
+The [Bitbucket Server Backup Client](https://confluence.atlassian.com/display/BitbucketServer/Data+recovery+and+backups) is currently not supported in the Docker setup. You can however use the [Bitbucket Server DIY Backup](https://confluence.atlassian.com/display/BITBUCKET+SERVER/Using+Bitbucket+DIY+Backup) approach in case you decided to use an external database.
+
+Read more about data recovery and backups: [Data recovery and backups](https://confluence.atlassian.com/display/BitbucketServer/Data+recovery+and+backups)
+TODO - See [this](https://github.com/mhubig/atlassian/tree/master/atlassian-stash) image
+
+### Restore
+Please refer to official [Data recovery and backups](https://confluence.atlassian.com/display/BitbucketServer/Data+recovery+and+backups) documentation before reading further.
+TODO - See [this](https://github.com/mhubig/atlassian/tree/master/atlassian-stash) image
+
+# License
 
 This image is licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for the full license text.
+
+# Supported Docker versions
+
+This image is officially supported on Docker version 1.12.
+
+Support for older versions (down to 1.6) is provided on a best-effort basis.
+
+Please see [the Docker installation documentation](https://docs.docker.com/installation/) for details on how to upgrade your Docker daemon.
+
+# User Feedback
+
+## Documentation
+
+Documentation for this image is currently only in this [README.md](README.md) file. Please support us keeping documentation up to date and relevant.
+
+## Issues
+
+If you have any problems with or questions about this image, please contact us through a [GitHub issue](https://github.com/acntech/docker-bitbucket/issues)
+
+You can also reach image maintainers mentioned in the [Dockerfile](Dockerfile).
+
+## Contributing
+
+You are invited to contribute new features, fixes, or updates, large or small; we are always thrilled to receive pull requests, and do our best to process them as fast as we can.
+
+Before you start to code, we recommend discussing your plans through a [GitHub issue](https://github.com/acntech/docker-bitbucket/issues), especially for more ambitious contributions. This gives other contributors a chance to point you in the right direction, give you feedback on your design, and help you find out if someone else is working on the same thing.
+
+Please make sure to raise a Pull Request for your changes to be merged into master branch.
+
+### Recommended Reading
+- [Docker Engine](https://docs.docker.com/engine/)
+- [Docker Compose](https://docs.docker.com/compose/)
+- [Docker Machine](https://docs.docker.com/machine/)
+- [Dockerfile reference](https://docs.docker.com/engine/reference/builder/)
+- [Best practices for writing Dockerfiles](https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/)
+- [Docker run reference](https://docs.docker.com/engine/reference/run/)
+- [Docker Cheat Sheet](https://github.com/wsargent/docker-cheat-sheet)
+- [Gracefully Stopping Docker Containers](https://www.ctl.io/developers/blog/post/gracefully-stopping-docker-containers/)
+- [Running the Bitbucket Server installer](https://confluence.atlassian.com/bitbucketserver/running-the-bitbucket-server-installer-776640183.html)
