@@ -175,3 +175,4 @@ Please make sure to raise a Pull Request for your changes to be merged into mast
 - [Docker Cheat Sheet](https://github.com/wsargent/docker-cheat-sheet)
 - [Gracefully Stopping Docker Containers](https://www.ctl.io/developers/blog/post/gracefully-stopping-docker-containers/)
 - [Running the Bitbucket Server installer](https://confluence.atlassian.com/bitbucketserver/running-the-bitbucket-server-installer-776640183.html)
+- [Getting started with Bitbucket Server](https://confluence.atlassian.com/bitbucketserver/using-bitbucket-server-776639769.html)
