@@ -100,9 +100,9 @@ Catalina properties:
 `Xmx` : JVM Maximum Memory (in this case 768 MB). [More information](https://confluence.atlassian.com/bitbucketserverkb/bitbucket-server-is-reaching-resource-limits-779171381.html#BitbucketServerisreachingresourcelimits-Memorybudget)
 `atlassian.plugins.enable.wait` : Time in seconds Bitbucket waits for plugins to load eg. 300. [More information](https://confluence.atlassian.com/display/JIRAKB/JIRA+applications+System+Plugin+Timeout+While+Waiting+for+Add-ons+to+Enable)
 
-### Bitbucket Setup
+### Using external Oracle database
 After container has started for the first time you can access Bitbucket Server UI at http://localhost:7990 and start initial setup. 
-If you would like to use Oracle as database, please take a look at [setup-bitbucket-oracledb.sql](sql/setup-bitbucket-oracledb.sql) and official [documentation](https://confluence.atlassian.com/bitbucketserver/connecting-bitbucket-server-to-oracle-776640379.html).
+If you would like to use external Oracle 12c database, please take a look at [setup-bitbucket-oracledb.sql](sql/setup-bitbucket-oracledb.sql) and official [documentation](https://confluence.atlassian.com/bitbucketserver/connecting-bitbucket-server-to-oracle-776640379.html).
 
 ### Upgrade
     
