@@ -1,4 +1,5 @@
 .git
-.travis.yml
 LICENSE
 README.md
+logo.png
+sql/setup-bitbucket-oracledb.sql
