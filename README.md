@@ -40,11 +40,30 @@ This will store the workspace in `/var/atlassian/application-data/bitbucket`. Al
 
 ```console
 $ docker run -d -p 7990:7990 -p 7999:7999 --name bitbucket \
-      -v "/your/home/data/bitbucket:/var/atlassian/application-data/bitbucket" \
+      -v "/var/lib/docker/data/bitbucket:/var/atlassian/application-data/bitbucket" \
       acntech/adop-bitbucket
 ```
-This will store the Bitbucket Server data in `/your/home` on the host. 
-Ensure that `/your/home` is accessible by the `bitbucket` user in container (`bitbucket` user - uid `1000`) or use [-u](https://docs.docker.com/engine/reference/run/#/user) `some_other_user` parameter with `docker run`.
+This will store the Bitbucket Server data in `/var/lib/docker/data/bitbucket` on the host. 
+Ensure that `/var/lib/docker/data/bitbucket` is accessible by the `bitbucket` user in container (`bitbucket` user - uid `1000`) or use [-u](https://docs.docker.com/engine/reference/run/#/user) `some_other_user` parameter with `docker run`.
+
+> WARNING! Please note that [boot2docker](https://github.com/boot2docker/boot2docker), which is used to host Docker on Windows and Mac when spinning up new [Docker Machine](https://docs.docker.com/machine/overview/), **removes** automatically **all folders** but `/var/lib/docker` and `/var/lib/boot2docker` in case of restarting the docker-machine. See [Persistent data](https://github.com/boot2docker/boot2docker#persist-data) and [ServerFault thread](http://serverfault.com/questions/722085/why-does-docker-machine-clear-data-on-restart).
+```console
+$ docker-machine ssh test-machine
+$ docker run -v /data:/data --name mydata busybox true
+$ docker run --volumes-from mydata busybox sh -c "echo hello >/data/hello"
+$ docker run --volumes-from mydata busybox cat /data/hello
+hello
+$ docker run -v /var/lib/docker/data:/data --name mydata2 busybox true
+$ docker run --volumes-from mydata2 busybox sh -c "echo hello >/data/hello"
+$ docker run --volumes-from mydata2 busybox cat /data/hello
+hello
+$ docker-machine restart test-machine
+$ docker-machine ssh test-machine
+$ docker run --volumes-from mydata busybox cat /data/hello
+cat: can't open '/data/hello': No such file or directory
+$ docker run --volumes-from mydata2 busybox cat /data/hello
+hello
+```
 
 ### Alt 3: Run container with reverse proxy
 
@@ -52,7 +71,7 @@ If you have a reverse proxy, such as [Nginx](https://confluence.atlassian.com/bi
 
 ```console
 $ docker run -d -p 7990:7990 -p 7999:7999 --name bitbucket \
-    -v "/your/home/data/bitbucket:/var/atlassian/application-data/bitbucket" \
+    -v "/var/lib/docker/data/bitbucket:/var/atlassian/application-data/bitbucket" \
     -e "X_PROXY_NAME=example.com" \
     -e "X_PROXY_PORT=80" \
     -e "X_PROXY_SCHEME=http" \
@@ -66,7 +85,7 @@ Environment Variables:
 `X_PROXY_SCHEME`    : Sets the connector scheme (in this case `http`).
 `X_PATH`            : Sets the context path (in this case `/bitbucket` so you would access Bitbucket http://localhost:8080/bitbucket).
 
-_IMPORTANT_! This configuration will be only written to `${BITBUCKET_HOME}/shared/server.xml` file once, when one or more of env variables are provided. Next time you stop/start container these parameters will be ignored.
+> IMPORTANT! This configuration will be only written to `${BITBUCKET_HOME}/shared/server.xml` file once, when one or more of env variables are provided. Next time you stop/start container these parameters will be ignored.
 
 You will also need to configure reverse proxy, _example_ of such configuration for _Nginx_ (which is running at same [Docker host and network](https://docs.docker.com/engine/userguide/networking/dockernetworks/) as Bitbucket) is:
 ```
@@ -86,7 +105,7 @@ server {
 
 ```console
 $ docker run -d -p 7990:7990 -p 7999:7999 --name bitbucket \
-      -v "/your/home/data/bitbucket:/var/atlassian/application-data/bitbucket" \
+      -v "/var/lib/docker/data/bitbucket:/var/atlassian/application-data/bitbucket" \
       -e "X_PROXY_NAME=example.com" \
       -e "X_PROXY_PORT=80" \
       -e "X_PROXY_SCHEME=http" \
@@ -117,12 +136,12 @@ container and start a new one based on a more recent Docker image:
 
 As your data is stored in the data volume directory on the host it will still be available after the upgrade.
 
-_IMPORTANT: Please make sure that you **don't** accidentally remove the `bitbucket`
-container and its volumes using the `-v` option._
+> IMPORTANT: Please make sure that you **don't** accidentally remove the `bitbucket`
+container and its volumes using the `-v` option.
 
 
 ### Backup 
-For evaluations you can use the built-in database that will store its files in the Bitbucket Server home directory. In that case it is sufficient to create a backup archive of the directory on the host that is used as a volume (`/your/home/data/bitbucket` in the example above).
+For evaluations you can use the built-in database that will store its files in the Bitbucket Server home directory. In that case it is sufficient to create a backup archive of the directory on the host that is used as a volume (`/var/lib/docker/data/bitbucket` in the example above).
 
 The [Bitbucket Server Backup Client](https://confluence.atlassian.com/display/BitbucketServer/Data+recovery+and+backups) is currently not supported in the Docker setup. You can however use the [Bitbucket Server DIY Backup](https://confluence.atlassian.com/display/BITBUCKET+SERVER/Using+Bitbucket+DIY+Backup) approach in case you decided to use an external database.
 
