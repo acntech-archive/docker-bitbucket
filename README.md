@@ -29,17 +29,19 @@ We want to give credit to following Docker images that has been used as inspirat
 ### Alt 1: Run container with minimum config
 
 ```console
-$ docker run -d -p 7990:7990 -p 7999:7999 --name bitbucket acntech/adop-bitbucket
+$ docker run --restart=unless-stopped -d -p 7990:7990 -p 7999:7999 --name bitbucket acntech/adop-bitbucket
 ```
 
 You are now ready to start configuration of Bitbucket (choosing license model and other initial configuration) by entering http://localhost:7990. We recommend that you look at logs (`docker logs bitbucket -f`) while initial configuration is done to make sure everything is running smooth.
 
-This will store the workspace in `/var/atlassian/application-data/bitbucket`. All Bitbucket Server data lives in there - including plugins, configuration, attachments ++ (see [Bitbucket Server home directory](https://confluence.atlassian.com/bitbucketserver/bitbucket-server-home-directory-776640890.html) ). You will probably want to make that a persistent volume (recommended)
+This will store the workspace in `/var/atlassian/application-data/bitbucket`. All Bitbucket Server data lives in there - including plugins, configuration, attachments ++ (see [Bitbucket Server home directory](https://confluence.atlassian.com/bitbucketserver/bitbucket-server-home-directory-776640890.html) ). You will probably want to make that a persistent volume (recommended). 
+
+The `--restart=unless-stopped` option is set to automatically restart the docker container in case of failure and server reboot, but not if the container has been set to stop state. [More information](https://docs.docker.com/engine/reference/run/#/restart-policies-restart).
 
 ### Alt 2: Run container with persisting volume
 
 ```console
-$ docker run -d -p 7990:7990 -p 7999:7999 --name bitbucket \
+$ docker run --restart=unless-stopped -d -p 7990:7990 -p 7999:7999 --name bitbucket \
       -v "/var/lib/docker/data/bitbucket:/var/atlassian/application-data/bitbucket" \
       acntech/adop-bitbucket
 ```
@@ -70,7 +72,7 @@ hello
 If you have a reverse proxy, such as [Nginx](https://confluence.atlassian.com/bitbucketserver/securing-bitbucket-server-behind-nginx-using-ssl-776640112.html) or [Apache HTTP Server](https://confluence.atlassian.com/kb/integrating-apache-http-server-reverse-proxy-with-bitbucket-server-753894395.html) in front of your Bitbucket Server you need to provide proxy settings:
 
 ```console
-$ docker run -d -p 7990:7990 -p 7999:7999 --name bitbucket \
+$ docker run --restart=unless-stopped -d -p 7990:7990 -p 7999:7999 --name bitbucket \
     -v "/var/lib/docker/data/bitbucket:/var/atlassian/application-data/bitbucket" \
     -e "X_PROXY_NAME=example.com" \
     -e "X_PROXY_PORT=80" \
@@ -104,7 +106,7 @@ server {
 ### Alt 4: Run container with custom memory and plugin timeout properties
 
 ```console
-$ docker run -d -p 7990:7990 -p 7999:7999 --name bitbucket \
+$ docker run --restart=unless-stopped -d -p 7990:7990 -p 7999:7999 --name bitbucket \
       -v "/var/lib/docker/data/bitbucket:/var/atlassian/application-data/bitbucket" \
       -e "X_PROXY_NAME=example.com" \
       -e "X_PROXY_PORT=80" \
