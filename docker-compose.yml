@@ -1,0 +1,10 @@
+version: '2'
+services:
+  bitbucket:
+    image: acntech/adop-bitbucket
+    build: .
+    ports:
+    - "7990:7990"
+    - "7999:7999"
+    volumes:
+    - ./dbconfig.xml:/var/atlassian/application-data/bitbucket/dbconfig.xml
