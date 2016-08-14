@@ -40,6 +40,11 @@ The `--restart=unless-stopped` option is set to automatically restart the docker
 
 ### Alt 2: Run container with persisting volume
 
+##### Mount a host directory as a data volume
+
+This strategy is mostly suited for testing locally as the container will be dependent on the filesystem of the host. 
+This might cause issues with regards to access rights on the mounted folder from the host filesystem. 
+
 ```console
 $ docker run --restart=unless-stopped -d -p 7990:7990 -p 7999:7999 --name bitbucket \
       -v "/var/lib/docker/data/bitbucket:/var/atlassian/application-data/bitbucket" \
@@ -66,6 +71,18 @@ cat: can't open '/data/hello': No such file or directory
 $ docker run --volumes-from mydata2 busybox cat /data/hello
 hello
 ```
+
+##### Mount a docker data volume
+
+Recommended approach for mounting data outside of the container. The data volume will exist even if you remove the container and the volume can easily be reused by other containers.
+[More information](https://docs.docker.com/engine/reference/commandline/volume_create/)
+
+```console
+$ docker volume create --name bitbucket_volume
+$ docker run --restart=unless-stopped -d -p 7990:7990 -p 7999:7999 --name bitbucket \
+    -v bitbucket_volume:/var/atlassian/application-data/bitbucket acntech/adop-bitbucket
+```
+This will map the data volume `bitbucket_volume` to the containers `/var/atlassian/application-data/bitbucket` directory.
 
 ### Alt 3: Run container with reverse proxy
 
